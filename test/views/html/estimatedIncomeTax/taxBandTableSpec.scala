@@ -23,49 +23,100 @@ import uk.gov.hmrc.tai.util.{BandTypesConstants, TaxRegionConstants}
 
 class taxBandTableSpec extends TaiViewSpec with BandTypesConstants with TaxRegionConstants {
 
-  "taxBandTable template" must {
-    "display the given column headings" in {
-      doc(view).select("#table-id").size() mustBe 1
-      doc(view) must haveTableThWithIdAndText("taxBand", messages("tai.incomeTaxBand"))
-      doc(view) must haveTableThWithIdAndText("taxAmount", messages("tai.amount"))
-      doc(view) must haveTableThWithIdAndText("taxRate", messages("tai.taxRate"))
-      doc(view) must haveTableThWithIdAndText("tax", messages("tai.tax"))
-    }
-    "display the correct number of rows" in {
-      doc(view).getElementsByTag("tr").size mustBe 5
-    }
-    "display the correct number of columns" in {
-      doc(view).getElementsByTag("th").size mustBe 4
+  "taxBandTable template" when {
+    "no nonSavingsLabel is passed in" must {
+      "display the given column headings" in {
+        doc(view).select("#table-id").size() mustBe 1
+        doc(view) must haveTableThWithIdAndText("taxBand", messages("tai.incomeTaxBand"))
+        doc(view) must haveTableThWithIdAndText("taxAmount", messages("tai.amount"))
+        doc(view) must haveTableThWithIdAndText("taxRate", messages("tai.taxRate"))
+        doc(view) must haveTableThWithIdAndText("tax", messages("tai.tax"))
+      }
+      "display the correct number of rows" in {
+        doc(view).getElementsByTag("tr").size mustBe 5
+      }
+      "display the correct number of columns" in {
+        doc(view).getElementsByTag("th").size mustBe 4
+      }
+
+      "display the given tax band types" in {
+        doc(view).select("#bandType0").text() mustBe messages("estimate.uk.bandtype.SDR")
+        doc(view).select("#bandType1").text() mustBe messages("estimate.uk.bandtype.LDR")
+        doc(view).select("#bandType2").text() mustBe messages("estimate.uk.bandtype.HDR1")
+        doc(view).select("#bandType3").text() mustBe messages("estimate.uk.bandtype.HDR2")
+      }
+      "display the given amounts" in {
+        doc(view).select("#income0").text() mustBe "£11,500"
+        doc(view).select("#income1").text() mustBe "£32,010"
+        doc(view).select("#income2").text() mustBe "£36,466"
+        doc(view).select("#income3").text() mustBe "£40,000"
+      }
+      "display the given tax rates" in {
+        doc(view).select("#taxRate0").text() mustBe "0%"
+        doc(view).select("#taxRate1").text() mustBe "20%"
+        doc(view).select("#taxRate2").text() mustBe "40%"
+        doc(view).select("#taxRate3").text() mustBe "50%"
+      }
+      "display the given tax paid" in {
+        doc(view).select("#tax0").text() mustBe "£0"
+        doc(view).select("#tax1").text() mustBe "£6,402"
+        doc(view).select("#tax2").text() mustBe "£14,586"
+        doc(view).select("#tax3").text() mustBe "£15,000"
+      }
     }
 
-    "display the given tax band types" in {
-      doc(view).select("#bandType0").text() mustBe messages("estimate.uk.bandtype.SDR")
-      doc(view).select("#bandType1").text() mustBe messages("estimate.uk.bandtype.LDR")
-      doc(view).select("#bandType2").text() mustBe messages("estimate.uk.bandtype.HDR1")
-      doc(view).select("#bandType3").text() mustBe messages("estimate.uk.bandtype.HDR2")
-    }
-    "display the given amounts" in {
-      doc(view).select("#income0").text() mustBe "£11,500"
-      doc(view).select("#income1").text() mustBe "£32,010"
-      doc(view).select("#income2").text() mustBe "£36,466"
-      doc(view).select("#income3").text() mustBe "£40,000"
-    }
-    "display the given tax rates" in {
-      doc(view).select("#taxRate0").text() mustBe "0%"
-      doc(view).select("#taxRate1").text() mustBe "20%"
-      doc(view).select("#taxRate2").text() mustBe "40%"
-      doc(view).select("#taxRate3").text() mustBe "50%"
-    }
-    "display the given tax paid" in {
-      doc(view).select("#tax0").text() mustBe "£0"
-      doc(view).select("#tax1").text() mustBe "£6,402"
-      doc(view).select("#tax2").text() mustBe "£14,586"
-      doc(view).select("#tax3").text() mustBe "£15,000"
+    "nonSavingsLabel is passed in" must {
+      "display the given column headings" in {
+        doc(view).select("#table-id").size() mustBe 1
+        doc(view) must haveTableThWithIdAndText("taxBand", messages("tai.incomeTaxBand"))
+        doc(view) must haveTableThWithIdAndText("taxAmount", messages("tai.amount"))
+        doc(view) must haveTableThWithIdAndText("taxRate", messages("tai.taxRate"))
+        doc(view) must haveTableThWithIdAndText("tax", messages("tai.tax"))
+      }
+      "display the correct number of rows" in {
+        doc(view).getElementsByTag("tr").size mustBe 5
+      }
+      "display the correct number of columns" in {
+        doc(view).getElementsByTag("th").size mustBe 4
+      }
+
+      "display the given tax band types" in {
+        val view: Html = views.html.estimatedIncomeTax.taxBandTable("table-id", incomeTaxBands, UkTaxRegion)
+
+        doc(view).select("#bandType0").text() mustBe messages("estimate.uk.bandtype.pa.private.pension")
+        doc(view).select("#bandType1").text() mustBe messages("estimate.uk.bandtype.LDR")
+        doc(view).select("#bandType2").text() mustBe messages("estimate.uk.bandtype.HDR1")
+        doc(view).select("#bandType3").text() mustBe messages("estimate.uk.bandtype.HDR2")
+      }
+      "display the given amounts" in {
+        doc(view).select("#income0").text() mustBe "£11,500"
+        doc(view).select("#income1").text() mustBe "£32,010"
+        doc(view).select("#income2").text() mustBe "£36,466"
+        doc(view).select("#income3").text() mustBe "£40,000"
+      }
+      "display the given tax rates" in {
+        doc(view).select("#taxRate0").text() mustBe "0%"
+        doc(view).select("#taxRate1").text() mustBe "20%"
+        doc(view).select("#taxRate2").text() mustBe "40%"
+        doc(view).select("#taxRate3").text() mustBe "50%"
+      }
+      "display the given tax paid" in {
+        doc(view).select("#tax0").text() mustBe "£0"
+        doc(view).select("#tax1").text() mustBe "£6,402"
+        doc(view).select("#tax2").text() mustBe "£14,586"
+        doc(view).select("#tax3").text() mustBe "£15,000"
+      }
     }
   }
 
   val taxBands = List(
     TaxBand(DividendZeroRate, "", 11500, 0, None, None, 0),
+    TaxBand(DividendBasicRate, "", 32010, 6402, None, None, 20),
+    TaxBand(DividendHigherRate, "", 36466, 14586.4, None, None, 40),
+    TaxBand(DividendAdditionalRate, "", 40000, 15000, None, None, 50))
+
+  val incomeTaxBands = List(
+    TaxBand(TaxFreeAllowanceBand, "", 11500, 0, None, None, 0),
     TaxBand(DividendBasicRate, "", 32010, 6402, None, None, 20),
     TaxBand(DividendHigherRate, "", 36466, 14586.4, None, None, 40),
     TaxBand(DividendAdditionalRate, "", 40000, 15000, None, None, 50))

@@ -355,19 +355,34 @@ class DetailedIncomeTaxEstimateViewModelSpec extends PlaySpec with FakeTaiPlayAp
       }
     }
 
-    "additional Income Tax Self Assessment text" should {
-      "be returned when Non-Coded Income is present" in {
-        val nonTaxCodeIncome = NonTaxCodeIncome(None, List(OtherNonTaxCodeIncome(NonCodedIncome,None,0,"")))
-        val model = DetailedIncomeTaxEstimateViewModel(totalTax, taxCodeIncomes,taxCodeSummary,Seq.empty,nonTaxCodeIncome)
+    "looking at non-savings" when {
 
-        model.selfAssessmentAndPayeText mustEqual Some(messagesApi("tai.estimatedIncome.selfAssessmentAndPayeText"))
+      "incomeTaxFreeLabel is called" when {
+
+        "income type is pensions" should {
+          "return the correct message key" in {
+
+            DetailedIncomeTaxEstimateViewModel.incomeTypeLabel("uk","private.pension") mustEqual "estimate.uk.bandtype.private.pension"
+
+          }
+        }
+
       }
 
-      "not returned when Non-Coded Income is absent" in {
-        val nonTaxCodeIncome = NonTaxCodeIncome(None, List.empty)
-        val model = DetailedIncomeTaxEstimateViewModel(totalTax, taxCodeIncomes,taxCodeSummary,Seq.empty,nonTaxCodeIncome)
+      "additional Income Tax Self Assessment text" should {
+        "be returned when Non-Coded Income is present" in {
+          val nonTaxCodeIncome = NonTaxCodeIncome(None, List(OtherNonTaxCodeIncome(NonCodedIncome, None, 0, "")))
+          val model = DetailedIncomeTaxEstimateViewModel(totalTax, taxCodeIncomes, taxCodeSummary, Seq.empty, nonTaxCodeIncome)
 
-        model.selfAssessmentAndPayeText mustEqual None
+          model.selfAssessmentAndPayeText mustEqual Some(messagesApi("tai.estimatedIncome.selfAssessmentAndPayeText"))
+        }
+
+        "not returned when Non-Coded Income is absent" in {
+          val nonTaxCodeIncome = NonTaxCodeIncome(None, List.empty)
+          val model = DetailedIncomeTaxEstimateViewModel(totalTax, taxCodeIncomes, taxCodeSummary, Seq.empty, nonTaxCodeIncome)
+
+          model.selfAssessmentAndPayeText mustEqual None
+        }
       }
     }
   }

@@ -468,7 +468,9 @@ class detailedIncomeTaxEstimateSpec extends TaiViewSpec with BandTypesConstants 
     messages("your.total.income.from.employment.desc",
       "£68,476",
       messages("tai.estimatedIncome.taxFree.link"),
-      "£11,500"))
+      "£11,500"),
+    ""
+  )
 
   def view(vm: DetailedIncomeTaxEstimateViewModel = defaultViewModel): Html = views.html.estimatedIncomeTax.detailedIncomeTaxEstimate(vm)
   override def view: Html = view(defaultViewModel)
@@ -489,7 +491,8 @@ class detailedIncomeTaxEstimateSpec extends TaiViewSpec with BandTypesConstants 
       taxFreeDividendAllowance = 0,
       selfAssessmentAndPayeText = None,
       taxOnIncomeTypeHeading = "",
-      taxOnIncomeTypeDescription = ""
+      taxOnIncomeTypeDescription = "",
+      incomeTypeString = ""
     )
   }
 

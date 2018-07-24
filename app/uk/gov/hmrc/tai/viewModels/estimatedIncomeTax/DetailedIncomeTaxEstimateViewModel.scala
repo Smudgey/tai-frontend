@@ -46,8 +46,12 @@ case class DetailedIncomeTaxEstimateViewModel(
                                        taxFreeDividendAllowance: BigDecimal,
                                        selfAssessmentAndPayeText: Option[String],
                                        taxOnIncomeTypeHeading: String,
-                                       taxOnIncomeTypeDescription: String
-                                     ) extends ViewModelHelper
+                                       taxOnIncomeTypeDescription: String,
+                                       incomeTypeString: String
+                                     ) extends ViewModelHelper {
+
+
+}
 
 
 object DetailedIncomeTaxEstimateViewModel extends BandTypesConstants with IncomeTaxEstimateHelper{
@@ -92,6 +96,8 @@ object DetailedIncomeTaxEstimateViewModel extends BandTypesConstants with Income
     val taxOnIncomeTypeHeading = getTaxOnIncomeTypeHeading(taxCodeIncomes)
     val taxOnIncomeTypeDescription = getTaxOnIncomeTypeDescription(taxCodeIncomes,taxAccountSummary)
 
+    val incomeTypeString = incomeType(taxCodeIncomes)
+
     DetailedIncomeTaxEstimateViewModel(
       mergedNonSavingsBand,
       savings,
@@ -107,7 +113,8 @@ object DetailedIncomeTaxEstimateViewModel extends BandTypesConstants with Income
       taxFreeDividend,
       additionIncomePayableText,
       taxOnIncomeTypeHeading,
-      taxOnIncomeTypeDescription
+      taxOnIncomeTypeDescription,
+      incomeTypeString
     )
   }
 
@@ -270,5 +277,7 @@ object DetailedIncomeTaxEstimateViewModel extends BandTypesConstants with Income
     taxBands.find(_.bandType == DividendZeroRate).flatMap(_.upperBand).getOrElse(BigDecimal(0))
 
   }
+
+  def incomeTypeLabel(region: String, incomeType: String) = s"estimate.$region.bandtype.$incomeType"
 
 }
