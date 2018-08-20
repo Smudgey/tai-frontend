@@ -59,93 +59,54 @@ class TaxCodeChangeSpec extends PlaySpec{
         model.allTaxCodePairsOrdered mustEqual Seq(TaxCodePair(Some(primaryFullYearTaxCode), Some(primaryFullYearTaxCode)))
       }
 
-      "return the primary pair when multiple pairs exist" in {
+      "return the primary pair first when multiple pairs exist" in {
         val model = TaxCodeChange(
           Seq(primaryFullYearTaxCode, previousTaxCodeRecord1, fullYearTaxCode),
           Seq(primaryFullYearTaxCode, currentTaxCodeRecord1, fullYearTaxCode)
         )
-        model.primaryPairs mustEqual Seq(TaxCodePair(Some(primaryFullYearTaxCode), Some(primaryFullYearTaxCode)))
+        model.allTaxCodePairsOrdered(0) mustEqual TaxCodePair(Some(primaryFullYearTaxCode), Some(primaryFullYearTaxCode))
       }
 
-      "return the primary pair when unmatched pairs exist" in {
+      "return the primary pair first when unmatched pairs exist" in {
         val model = TaxCodeChange(
           Seq(primaryFullYearTaxCode, previousTaxCodeRecord1, fullYearTaxCode),
           Seq(primaryFullYearTaxCode, currentTaxCodeRecord1, fullYearTaxCode)
         )
-        model.primaryPairs mustEqual Seq(TaxCodePair(Some(primaryFullYearTaxCode), Some(primaryFullYearTaxCode)))
+        model.allTaxCodePairsOrdered(0) mustEqual TaxCodePair(Some(primaryFullYearTaxCode), Some(primaryFullYearTaxCode))
       }
 
-      "return the primary pairs when multiple primaries exist" in {
+      "return the primary pairs first when multiple primaries exist" in {
         val previousPrimary = previousTaxCodeRecord1.copy(primary = true)
         val currentPrimary = currentTaxCodeRecord1.copy(primary = true)
         val model = TaxCodeChange(
           Seq(previousPrimary, primaryFullYearTaxCode),
           Seq(currentPrimary, primaryFullYearTaxCode)
         )
-        model.primaryPairs mustEqual Seq(
+        model.allTaxCodePairsOrdered.take(2) mustEqual Seq(
           TaxCodePair(Some(previousPrimary), Some(currentPrimary)),
           TaxCodePair(Some(primaryFullYearTaxCode), Some(primaryFullYearTaxCode))
         )
       }
 
-      "return the secondary pairs" in {
+      "return the secondary pairs after the primary pairs" in {
         val model = TaxCodeChange(
           Seq(previousTaxCodeRecord1, fullYearTaxCode, primaryFullYearTaxCode, unmatchedPreviousTaxCode),
           Seq(currentTaxCodeRecord1, fullYearTaxCode, primaryFullYearTaxCode, unmatchedCurrentTaxCode)
         )
 
-        model.secondaryPairs mustEqual Seq(
-          TaxCodePair(Some(previousTaxCodeRecord1), Some(currentTaxCodeRecord1)),
-          TaxCodePair(Some(fullYearTaxCode), Some(fullYearTaxCode))
-        )
+        model.allTaxCodePairsOrdered(1) mustEqual TaxCodePair(Some(previousTaxCodeRecord1), Some(currentTaxCodeRecord1))
+        model.allTaxCodePairsOrdered(2) mustEqual TaxCodePair(Some(fullYearTaxCode), Some(fullYearTaxCode))
       }
 
-      "return the unmatched current taxCodes given one in current and one in previous" in {
+      "return the unmatched current and previous taxCodes given one in current and one in previous" in {
         val model = TaxCodeChange(
           Seq(unmatchedPreviousTaxCode),
           Seq(unmatchedCurrentTaxCode)
         )
-        model.unpairedCurrentCodes mustEqual Seq(TaxCodePair(None, Some(unmatchedCurrentTaxCode)))
-      }
-
-      "return the unmatched current taxCodes given a matching pair" in {
-        val model = TaxCodeChange(
-          Seq(previousTaxCodeRecord1),
-          Seq(currentTaxCodeRecord1)
+        model.allTaxCodePairsOrdered mustEqual Seq(
+          TaxCodePair(Some(unmatchedPreviousTaxCode), None),
+          TaxCodePair(None, Some(unmatchedCurrentTaxCode))
         )
-        model.unpairedCurrentCodes mustEqual Seq.empty
-      }
-
-      "return the unmatched current taxCodes" in {
-        val model = TaxCodeChange(
-          Seq(previousTaxCodeRecord1, fullYearTaxCode, primaryFullYearTaxCode, unmatchedPreviousTaxCode),
-          Seq(currentTaxCodeRecord1, fullYearTaxCode, primaryFullYearTaxCode, unmatchedCurrentTaxCode)
-        )
-        model.unpairedCurrentCodes mustEqual Seq(TaxCodePair(None, Some(unmatchedCurrentTaxCode)))
-      }
-
-      "return the unmatched previous taxCodes given one in current and one in previous" in {
-        val model = TaxCodeChange(
-          Seq(unmatchedPreviousTaxCode),
-          Seq(unmatchedCurrentTaxCode)
-        )
-        model.unpairedPreviousCodes mustEqual Seq(TaxCodePair(Some(unmatchedPreviousTaxCode), None))
-      }
-
-      "return the unmatched previous taxCodes" in {
-        val model = TaxCodeChange(
-          Seq(previousTaxCodeRecord1, fullYearTaxCode, primaryFullYearTaxCode, unmatchedPreviousTaxCode),
-          Seq(currentTaxCodeRecord1, fullYearTaxCode, primaryFullYearTaxCode, unmatchedCurrentTaxCode)
-        )
-        model.unpairedPreviousCodes mustEqual Seq(TaxCodePair(Some(unmatchedPreviousTaxCode), None))
-      }
-
-      "return the unmatched previous taxCodes given a matching pair" in {
-        val model = TaxCodeChange(
-          Seq(previousTaxCodeRecord1),
-          Seq(currentTaxCodeRecord1)
-        )
-        model.unpairedPreviousCodes mustEqual Seq.empty
       }
 
       "return all tax codes pairs ordered by primary, secondary, unmatched previous, unmatched current" in {
