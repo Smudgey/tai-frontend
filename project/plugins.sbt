@@ -4,6 +4,8 @@ resolvers ++= Seq(
   Resolver.url("scoverage-bintray", url("https://dl.bintray.com/sksamuel/sbt-plugins/"))(Resolver.ivyStylePatterns)
 )
 
+resolvers += "HMRC Releases" at "https://dl.bintray.com/hmrc/releases"
+
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.5.12")
 
 addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "0.8.0")
