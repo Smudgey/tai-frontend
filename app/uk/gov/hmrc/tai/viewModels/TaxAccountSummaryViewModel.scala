@@ -16,10 +16,8 @@
 
 package uk.gov.hmrc.tai.viewModels
 
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
-import play.api.Play.current
 import play.api.i18n.Messages
+import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.play.language.LanguageUtils.Dates
 import uk.gov.hmrc.play.views.helpers.MoneyPounds
 import uk.gov.hmrc.tai.filters.TaxAccountFilter
@@ -29,6 +27,16 @@ import uk.gov.hmrc.tai.util.TaiConstants.{EmployeePensionIForm, InvestIncomeIfor
 import uk.gov.hmrc.tai.util.ViewModelHelper
 import uk.gov.hmrc.time.TaxYearResolver
 
+
+
+case class FullTaxSummaryForYearResponse(taxCodeIncome: Seq[TaxCodeIncome],
+                                         employments: Seq[Employment],
+                                         taxAccountSummary: TaxAccountSummary,
+                                         isAnyFormInProgress: Boolean,
+                                         nonTaxCodeIncome: Incomes)
+object FullTaxSummaryForYearResponse {
+  implicit val format: Format[FullTaxSummaryForYearResponse] = Json.format[FullTaxSummaryForYearResponse]
+}
 
 case class TaxAccountSummaryViewModel(header: String,
                                       title: String,
@@ -44,28 +52,24 @@ case class TaxAccountSummaryViewModel(header: String,
                                      )
 
 object TaxAccountSummaryViewModel extends ViewModelHelper with TaxAccountFilter {
-  def apply(taxCodeIncomes: Seq[TaxCodeIncome],
-            employments: Seq[Employment],
-            taxAccountSummary: TaxAccountSummary,
-            isAnyFormInProgress: Boolean,
-            nonTaxCodeIncome: NonTaxCodeIncome)(implicit messages: Messages): TaxAccountSummaryViewModel = {
+  def apply(taxSummary: FullTaxSummaryForYearResponse)(implicit messages: Messages): TaxAccountSummaryViewModel = {
 
     val header = Messages("tai.incomeTaxSummary.heading.part1") + " " + currentTaxYearRangeHtmlNonBreak
     val title = Messages("tai.incomeTaxSummary.heading.part1") + " " + currentTaxYearRange
 
-    val taxFreeAmount = withPoundPrefixAndSign(MoneyPounds(taxAccountSummary.taxFreeAmount, 0))
-    val estimatedIncomeTaxAmount = withPoundPrefixAndSign(MoneyPounds(taxAccountSummary.totalEstimatedTax, 0))
+    val taxFreeAmount = withPoundPrefixAndSign(MoneyPounds(taxSummary.taxAccountSummary.taxFreeAmount, 0))
+    val estimatedIncomeTaxAmount = withPoundPrefixAndSign(MoneyPounds(taxSummary.taxAccountSummary.totalEstimatedTax, 0))
 
-    val employmentTaxCodeIncomes = taxCodeIncomes filter liveEmployment
-    val employmentViewModels = viewModelsFromMatchingIncomeSources(employmentTaxCodeIncomes, employments)
+    val employmentTaxCodeIncomes = taxSummary.taxCodeIncome filter liveEmployment
+    val employmentViewModels = viewModelsFromMatchingIncomeSources(employmentTaxCodeIncomes, taxSummary.employments)
 
-    val pensionTaxCodeIncomes = taxCodeIncomes filter livePension
-    val pensionsViewModels = viewModelsFromMatchingIncomeSources(pensionTaxCodeIncomes, employments)
+    val pensionTaxCodeIncomes = taxSummary.taxCodeIncome filter livePension
+    val pensionsViewModels = viewModelsFromMatchingIncomeSources(pensionTaxCodeIncomes, taxSummary.employments)
 
-    val ceasedEmploymentTaxCodeIncomes = taxCodeIncomes filter ceasedEmployment
+    val ceasedEmploymentTaxCodeIncomes = taxSummary.taxCodeIncome filter ceasedEmployment
     val ceasedEmploymentViewModels =
-      viewModelsFromMatchingIncomeSources(ceasedEmploymentTaxCodeIncomes, employments) ++
-      viewModelsFromNonMatchingCeasedEmployments(taxCodeIncomes, employments)
+      viewModelsFromMatchingIncomeSources(ceasedEmploymentTaxCodeIncomes, taxSummary.employments) ++
+      viewModelsFromNonMatchingCeasedEmployments(taxSummary.taxCodeIncome, taxSummary.employments)
 
     val lastTaxYearEnd = Dates.formatDate(TaxYearResolver.endOfCurrentTaxYear.minusYears(1))
 
@@ -78,9 +82,9 @@ object TaxAccountSummaryViewModel extends ViewModelHelper with TaxAccountFilter 
       employmentViewModels,
       pensionsViewModels,
       ceasedEmploymentViewModels,
-      taxAccountSummary.totalInYearAdjustmentIntoCY > 0,
-      isAnyFormInProgress,
-      IncomeSourceViewModel(nonTaxCodeIncome))
+      taxSummary.taxAccountSummary.totalInYearAdjustmentIntoCY > 0,
+      taxSummary.isAnyFormInProgress,
+      IncomeSourceViewModel(taxSummary.nonTaxCodeIncome.nonTaxCodeIncomes))
 
   }
 

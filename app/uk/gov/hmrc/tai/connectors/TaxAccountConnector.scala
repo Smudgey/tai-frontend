@@ -23,11 +23,12 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.tai.connectors.EmploymentsConnector.baseUrl
 import uk.gov.hmrc.tai.connectors.responses.{TaiResponse, TaiSuccessResponse, TaiSuccessResponseWithPayload, TaiTaxAccountFailureResponse}
 import uk.gov.hmrc.tai.model.TaxYear
+import uk.gov.hmrc.tai.model.domain.{TaxAccountSummary, UpdateTaxCodeIncomeRequest}
 import uk.gov.hmrc.tai.model.domain.calculation.CodingComponent
 import uk.gov.hmrc.tai.model.domain.formatters.CodingComponentFormatters
 import uk.gov.hmrc.tai.model.domain.income.{Incomes, TaxCodeIncome}
 import uk.gov.hmrc.tai.model.domain.tax.TotalTax
-import uk.gov.hmrc.tai.model.domain.{TaxAccountSummary, UpdateTaxCodeIncomeRequest}
+import uk.gov.hmrc.tai.viewModels.FullTaxSummaryForYearResponse
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -45,6 +46,8 @@ trait TaxAccountConnector extends CodingComponentFormatters {
   def codingComponentsUrl(nino: String, year: TaxYear): String = s"$serviceUrl/tai/$nino/tax-account/${year.year}/tax-components"
 
   def taxAccountSummaryUrl(nino: String, year: TaxYear): String = s"$serviceUrl/tai/$nino/tax-account/${year.year}/summary"
+
+  def fullTaxAccountSummaryUrl(nino: String, year: TaxYear): String = s"$serviceUrl/tai/$nino/full-paye-summary/${year.year}"
 
   def updateTaxCodeIncome(nino: String, year: TaxYear, id: Int): String =
     s"$serviceUrl/tai/$nino/tax-account/snapshots/${year.year}/incomes/tax-code-incomes/$id/estimated-pay"
@@ -88,6 +91,17 @@ trait TaxAccountConnector extends CodingComponentFormatters {
     httpHandler.getFromApi(taxAccountSummaryUrl(nino.nino, year)) map (
       json =>
         TaiSuccessResponseWithPayload((json \ "data").as[TaxAccountSummary])
+        ) recover {
+          case e: Exception =>
+            Logger.warn(s"Couldn't retrieve tax summary for $nino with exception:${e.getMessage}")
+            TaiTaxAccountFailureResponse(e.getMessage)
+        }
+  }
+
+  def fullTaxAccountSummary(nino: Nino, year: TaxYear)(implicit hc: HeaderCarrier): Future[TaiResponse] = {
+    httpHandler.getFromApi(fullTaxAccountSummaryUrl(nino.nino, year)) map (
+      json =>
+        TaiSuccessResponseWithPayload((json \ "data").as[FullTaxSummaryForYearResponse])
         ) recover {
           case e: Exception =>
             Logger.warn(s"Couldn't retrieve tax summary for $nino with exception:${e.getMessage}")

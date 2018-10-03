@@ -28,7 +28,6 @@ import org.scalatestplus.play.PlaySpec
 import play.api.i18n.{I18nSupport, Messages, MessagesApi}
 import play.api.test.Helpers.{contentAsString, status, _}
 import uk.gov.hmrc.domain.Generator
-import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.frontend.auth.connectors.{AuthConnector, DelegationConnector}
@@ -39,6 +38,7 @@ import uk.gov.hmrc.tai.model.domain._
 import uk.gov.hmrc.tai.model.domain.income._
 import uk.gov.hmrc.tai.service._
 import uk.gov.hmrc.tai.util.{AuditConstants, TaiConstants}
+import uk.gov.hmrc.tai.viewModels.FullTaxSummaryForYearResponse
 import uk.gov.hmrc.time.TaxYearResolver
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,20 +50,12 @@ class TaxAccountSummaryControllerSpec extends PlaySpec with MockitoSugar with Fa
   implicit val messagesApi: MessagesApi = app.injector.instanceOf[MessagesApi]
 
   "onPageLoad" must {
-
-
     "display the income tax summary page" in {
       val sut = createSUT
-      when(sut.employmentService.employments(any(), any())(any())).thenReturn(Future.successful(Seq(employment)))
-      when(sut.taxAccountService.taxCodeIncomes(any(), any())(any())).thenReturn(
-        Future.successful(TaiSuccessResponseWithPayload[Seq[TaxCodeIncome]](taxCodeIncomes)))
-      when(sut.taxAccountService.nonTaxCodeIncomes(any(), any())(any())).thenReturn(
-        Future.successful(TaiSuccessResponseWithPayload[NonTaxCodeIncome](nonTaxCodeIncome))
+
+      when(sut.taxAccountService.fullTaxAccountSummary(any(), any())(any())).thenReturn(
+        Future.successful(TaiSuccessResponseWithPayload[FullTaxSummaryForYearResponse](fullTaxSummaryForYearResponse))
       )
-      when(sut.taxAccountService.taxAccountSummary(any(), any())(any())).thenReturn(
-        Future.successful(TaiSuccessResponseWithPayload[TaxAccountSummary](taxAccountSummary))
-      )
-      when(sut.trackingService.isAnyIFormInProgress(any())(any())).thenReturn(Future.successful(true))
 
       val result = sut.onPageLoad()(RequestBuilder.buildFakeRequestWithAuth("GET"))
       status(result) mustBe OK
@@ -81,16 +73,11 @@ class TaxAccountSummaryControllerSpec extends PlaySpec with MockitoSugar with Fa
 
     "raise an audit event" in {
       val sut = createSUT
-      when(sut.employmentService.employments(any(), any())(any())).thenReturn(Future.successful(Seq(employment)))
-      when(sut.taxAccountService.taxCodeIncomes(any(), any())(any())).thenReturn(
-        Future.successful(TaiSuccessResponseWithPayload[Seq[TaxCodeIncome]](taxCodeIncomes)))
-      when(sut.taxAccountService.nonTaxCodeIncomes(any(), any())(any())).thenReturn(
-        Future.successful(TaiSuccessResponseWithPayload[NonTaxCodeIncome](nonTaxCodeIncome))
+
+      when(sut.taxAccountService.fullTaxAccountSummary(any(), any())(any())).thenReturn(
+        Future.successful(TaiSuccessResponseWithPayload[FullTaxSummaryForYearResponse](fullTaxSummaryForYearResponse))
       )
-      when(sut.taxAccountService.taxAccountSummary(any(), any())(any())).thenReturn(
-        Future.successful(TaiSuccessResponseWithPayload[TaxAccountSummary](taxAccountSummary))
-      )
-      when(sut.trackingService.isAnyIFormInProgress(any())(any())).thenReturn(Future.successful(true))
+
       when(sut.auditService.createAndSendAuditEvent(Matchers.eq(TaxAccountSummary_UserEntersSummaryPage), Matchers.eq(Map("nino" -> nino.nino)))(any(), any())).thenReturn(Future.successful(Success))
       val result = sut.onPageLoad()(RequestBuilder.buildFakeRequestWithAuth("GET"))
       status(result) mustBe OK
@@ -100,28 +87,16 @@ class TaxAccountSummaryControllerSpec extends PlaySpec with MockitoSugar with Fa
     "display an error page" when {
       "a downstream error has occurred in one of the TaiResponse responding service methods" in {
         val sut = createSUT
-        when(sut.employmentService.employments(any(), any())(any())).thenReturn(Future.successful(Seq(employment)))
-        when(sut.taxAccountService.taxCodeIncomes(any(), any())(any())).thenReturn(
-          Future.successful(TaiSuccessResponseWithPayload[Seq[TaxCodeIncome]](taxCodeIncomes)))
-        when(sut.taxAccountService.nonTaxCodeIncomes(any(), any())(any())).thenReturn(
-          Future.successful(TaiSuccessResponseWithPayload[NonTaxCodeIncome](nonTaxCodeIncome))
-        )
-        when(sut.taxAccountService.taxAccountSummary(any(), any())(any())).thenReturn(Future(TaiTaxAccountFailureResponse("Data retrieval failure")))
+        when(sut.taxAccountService.fullTaxAccountSummary(any(), any())(any())).thenReturn(Future(TaiTaxAccountFailureResponse("Data retrieval failure")))
 
         val result = sut.onPageLoad()(RequestBuilder.buildFakeRequestWithAuth("GET"))
         status(result) mustBe INTERNAL_SERVER_ERROR
       }
       "a downstream error has occurred in the employment service (which does not reply with TaiResponse type)" in {
         val sut = createSUT
-        when(sut.taxAccountService.taxCodeIncomes(any(), any())(any())).thenReturn(
-          Future.successful(TaiSuccessResponseWithPayload[Seq[TaxCodeIncome]](taxCodeIncomes)))
-        when(sut.taxAccountService.nonTaxCodeIncomes(any(), any())(any())).thenReturn(
-          Future.successful(TaiSuccessResponseWithPayload[NonTaxCodeIncome](nonTaxCodeIncome))
-        )
-        when(sut.taxAccountService.taxAccountSummary(any(), any())(any())).thenReturn(
+        when(sut.taxAccountService.fullTaxAccountSummary(any(), any())(any())).thenReturn(
           Future.successful(TaiSuccessResponseWithPayload[TaxAccountSummary](taxAccountSummary))
         )
-        when(sut.employmentService.employments(any(), any())(any())).thenReturn(Future.failed(new BadRequestException("no employments recorded for this individual")))
 
         val result = sut.onPageLoad()(RequestBuilder.buildFakeRequestWithAuth("GET"))
         status(result) mustBe INTERNAL_SERVER_ERROR
@@ -130,16 +105,9 @@ class TaxAccountSummaryControllerSpec extends PlaySpec with MockitoSugar with Fa
 
       "a downstream error has occurred in the tax code income service (which does not reply with TaiResponse type)" in {
         val sut = createSUT
-        when(sut.trackingService.isAnyIFormInProgress(any())(any())).thenReturn(Future.successful(true))
-        when(sut.taxAccountService.taxCodeIncomes(any(), any())(any())).thenReturn(
-          Future.successful(TaiTaxAccountFailureResponse("Failed")))
-        when(sut.taxAccountService.nonTaxCodeIncomes(any(), any())(any())).thenReturn(
-          Future.successful(TaiSuccessResponseWithPayload[NonTaxCodeIncome](nonTaxCodeIncome))
-        )
-        when(sut.taxAccountService.taxAccountSummary(any(), any())(any())).thenReturn(
+        when(sut.taxAccountService.fullTaxAccountSummary(any(), any())(any())).thenReturn(
           Future.successful(TaiSuccessResponseWithPayload[TaxAccountSummary](taxAccountSummary))
         )
-        when(sut.employmentService.employments(any(), any())(any())).thenReturn(Future.successful(Seq(employment)))
 
         val result = sut.onPageLoad()(RequestBuilder.buildFakeRequestWithAuth("GET"))
         status(result) mustBe INTERNAL_SERVER_ERROR
@@ -148,11 +116,10 @@ class TaxAccountSummaryControllerSpec extends PlaySpec with MockitoSugar with Fa
 
       "a downstream error has occurred in one of the TaiResponse responding service methods due to no found primary employment information" in {
         val sut = createSUT
-        when(sut.trackingService.isAnyIFormInProgress(any())(any())).thenReturn(Future.successful(true))
         when(sut.authConnector.currentAuthority(any(), any())).thenReturn(AuthBuilder.createFakeAuthData(nino))
         when(sut.personService.personDetails(any())(any())).thenReturn(Future.successful(fakePerson(nino)))
 
-        when(sut.taxAccountService.taxAccountSummary(any(), any())(any())).thenReturn(Future(TaiTaxAccountFailureResponse(TaiConstants.NpsTaxAccountDataAbsentMsg.toLowerCase)))
+        when(sut.taxAccountService.fullTaxAccountSummary(any(), any())(any())).thenReturn(Future(TaiTaxAccountFailureResponse(TaiConstants.NpsTaxAccountDataAbsentMsg.toLowerCase)))
 
         val result = sut.onPageLoad()(RequestBuilder.buildFakeRequestWithAuth("GET"))
         status(result) mustBe SEE_OTHER
@@ -161,11 +128,10 @@ class TaxAccountSummaryControllerSpec extends PlaySpec with MockitoSugar with Fa
       }
       "a downstream error has occurred in one of the TaiResponse responding service methods due to no employments recorded for current tax year" in {
         val sut = createSUT
-        when(sut.trackingService.isAnyIFormInProgress(any())(any())).thenReturn(Future.successful(true))
         when(sut.authConnector.currentAuthority(any(), any())).thenReturn(AuthBuilder.createFakeAuthData(nino))
         when(sut.personService.personDetails(any())(any())).thenReturn(Future.successful(fakePerson(nino)))
 
-        when(sut.taxAccountService.taxAccountSummary(any(), any())(any())).thenReturn(Future(TaiTaxAccountFailureResponse(TaiConstants.NpsNoEmploymentForCurrentTaxYear.toLowerCase)))
+        when(sut.taxAccountService.fullTaxAccountSummary(any(), any())(any())).thenReturn(Future(TaiTaxAccountFailureResponse(TaiConstants.NpsNoEmploymentForCurrentTaxYear.toLowerCase)))
 
         val result = sut.onPageLoad()(RequestBuilder.buildFakeRequestWithAuth("GET"))
         status(result) mustBe SEE_OTHER
@@ -192,14 +158,15 @@ class TaxAccountSummaryControllerSpec extends PlaySpec with MockitoSugar with Fa
     OtherNonTaxCodeIncome(Profit, None, 100, "Profit")
   ))
 
+  val fullTaxSummaryForYearResponse =
+    FullTaxSummaryForYearResponse(taxCodeIncomes, Seq.empty, taxAccountSummary, isAnyFormInProgress = false, Incomes(Seq.empty, nonTaxCodeIncome))
+
   def createSUT = new SUT()
 
   class SUT() extends TaxAccountSummaryController {
     override val personService: PersonService = mock[PersonService]
     override val auditService: AuditService = mock[AuditService]
     override val taxAccountService: TaxAccountService = mock[TaxAccountService]
-    override val employmentService: EmploymentService = mock[EmploymentService]
-    override val trackingService: TrackingService = mock[TrackingService]
     override val authConnector: AuthConnector = mock[AuthConnector]
     override val auditConnector: AuditConnector = mock[AuditConnector]
     override val delegationConnector: DelegationConnector = mock[DelegationConnector]
